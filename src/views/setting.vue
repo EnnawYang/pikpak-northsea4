@@ -12,12 +12,21 @@
       </n-collapse-item>
       <n-collapse-item name="0" title="aria2设置">
         <template #header>aria2设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#arai2" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
-        <n-form label-width="100px" label-align="left" label-placement="left">
+        <n-form label-width="150px" label-align="left" label-placement="left">
           <n-form-item label="aria2链接：">
             <n-input v-model:value="aria2Data.host" placeholder="例如http://localhost:6800/jsonrpc"></n-input>
           </n-form-item>
           <n-form-item label="aria2Token：">
             <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown"></n-input>
+          </n-form-item>
+          <n-form-item label="下载服务器序号：">
+            <n-input v-model:value="aria2Data.serverNumber" placeholder="替换下载链接里的服务器序号"></n-input>
+          </n-form-item>
+          <n-form-item label="单个文件链接数量：">
+            <n-input-number v-model:value="aria2Data.batchUrlNum" placeholder="需要推送多少个链接并发下载"></n-input-number>
+          </n-form-item>
+          <n-form-item label="获取链接并发：">
+            <n-input-number v-model:value="aria2Data.batchUrlConcurrence" placeholder="提取多个下载链接时的并发数"></n-input-number>
           </n-form-item>
           <n-form-item label="文件夹设置：">
             <n-switch v-model:value="aria2Data.dir" >
@@ -82,7 +91,7 @@
 import { ref } from '@vue/reactivity';
 import { onMounted } from '@vue/runtime-core';
 import http from '../utils/axios'
-import { NForm, NFormItem, NButton, NInput, NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, NAlert, NLog, NIcon } from 'naive-ui'
+import { NForm, NFormItem, NButton, NInput, NInputNumber, NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, NAlert, NLog, NIcon } from 'naive-ui'
 import { ZoomQuestion } from '@vicons/tabler'
 import {proxy as proxyDefault} from '../config'
 const logs = ref([
@@ -99,7 +108,10 @@ const logs = ref([
 const aria2Data = ref({
   host: '',
   token: '',
-  dir: true
+  dir: true,
+  serverNumber: '',
+  batchUrlNum: 1,
+  batchUrlConcurrence: 1,
 })
 const testAria2 = () => {
   let postData:any = {
