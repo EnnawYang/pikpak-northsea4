@@ -4,10 +4,12 @@
       <div class="title n-ellipsis">
         <n-breadcrumb separator=">">
           <n-breadcrumb-item>
-            <router-link to="/list">文件</router-link>
+            <router-link to="/redirect/list">文件</router-link>
           </n-breadcrumb-item>
-          <n-breadcrumb-item v-if="parentInfo && parentInfo.name">
-            {{parentInfo.name}}
+          <n-breadcrumb-item v-for="(pathItem, k) in pathItems" :key="k">
+            <router-link :to="`/redirect/list/${pathItem.id}`">
+              {{pathItem.name}}
+            </router-link>
           </n-breadcrumb-item>
         </n-breadcrumb>
       </div>
@@ -251,6 +253,7 @@ import streamSaver from 'streamsaver'
 import { DropdownMixedOption } from 'naive-ui/lib/dropdown/src/interface'
 import axios, { AxiosInstance } from 'axios'
   const filesList = ref()
+  const pathItems = ref<any>([])
   const route = useRoute()
   const router = useRouter()
   interface FileInfo {
@@ -530,6 +533,7 @@ import axios, { AxiosInstance } from 'axios'
         loading.value = false
       })
   }
+
   const initPage = () => {
     moveFiles.value = JSON.parse(window.localStorage.getItem('pikpakMoveFiles') || '[]')
     copyFiles.value = JSON.parse(window.localStorage.getItem('pikpakCopyFiles') || '[]')
@@ -539,19 +543,24 @@ import axios, { AxiosInstance } from 'axios'
     pageToken.value = ''
     getFileList()
     parentInfo.value = {}
+    pathItems.value = []
     if(route.params.id && route.params.id !== '*') {
       getFile(String(route.params.id))
         .then(res => {
           parentInfo.value = res.data
+          pathItems.value = [res.data]
         })
     }
   }
+
   watch(route, () => {
     initPage()
   })
+
   const aria2Data = ref()
   const parentInfo = ref()
   const samllPage = ref(true)
+
   onMounted(() => {
     const width = document.body.clientWidth
     if(width > 968) {
@@ -1241,6 +1250,7 @@ import axios, { AxiosInstance } from 'axios'
 .header .action {
   font-size: 24px;
 }
+
 .n-data-table-td {
   cursor: pointer;
 }

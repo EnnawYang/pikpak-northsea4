@@ -91,7 +91,7 @@
 import { ref } from '@vue/reactivity';
 import { onMounted } from '@vue/runtime-core';
 import http from '../utils/axios'
-import { NForm, NFormItem, NButton, NInput, NInputNumber, NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, NAlert, NLog, NIcon } from 'naive-ui'
+import { NForm, NFormItem, NButton, NInput, NText, NInputNumber, NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, NAlert, NLog, NIcon } from 'naive-ui'
 import { ZoomQuestion } from '@vicons/tabler'
 import {proxy as proxyDefault} from '../config'
 const logs = ref([

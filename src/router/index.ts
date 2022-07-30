@@ -16,6 +16,10 @@ const routes: RouteRecordRaw[] = [
     },
     children: [
       {
+        path: '/redirect/:path*',
+        component: () => import('../views/redirect.vue'),
+      },
+      {
         path: 'list/:id?',
         name: 'list',
         component: () => import('../views/list.vue')
