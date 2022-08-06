@@ -24,11 +24,8 @@ export const isMagnetLink = (val: string) => {
   return /magnet:\?xt=urn:btih/.test(val)
 }
 
-export const getMagnetLinksFromText = (
-  text: string,
-  strict: boolean = false
-) => {
-  const rows = text.split('\n')
+export const getMagnetLinksFromText = (text: string,strict: boolean = false) => {
+  const rows = text.split("\n")
   const links = []
   for (let i = 0; i < rows.length; i++) {
     if (isMagnetLink(rows[i])) {

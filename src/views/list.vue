@@ -603,10 +603,10 @@ import axios, { AxiosInstance } from 'axios'
   // 粘贴时间处理（自动填写添加内容，甚至可以直接提交添加）
   const handlePaste = async (e: any) => {
     const tag = (e.target ? e.target.tagName : '').toLowerCase()
-    const isTagValid = ['input', 'textarea', 'file'].includes(tag)
+    const isTagValid = !['input', 'textarea', 'file'].includes(tag)
     const text = e.clipboardData.getData('text').trim()
     const links = getMagnetLinksFromText(text)
-    if (!isTagValid && links.length) {
+    if (isTagValid && links.length) {
       window.$message.info('自动填写粘贴的内容并提交...')
       newUrl.value = links.join("\n")
       showAddUrl.value = true
