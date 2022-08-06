@@ -20,13 +20,18 @@
           </n-button>
           <n-button v-if="copyFiles?.length" @click="copyPost">
             粘贴已复制{{copyFiles.length}}项资源
+          </n-button>         
+          <n-button @click="showAddUrl = true">
+            <template #icon>
+              <n-icon :color="themeVars.primaryColor">
+                <circle-plus></circle-plus>
+              </n-icon>
+            </template>
+            添加磁力/秒链/目录
           </n-button>
-          <n-button  @click="showUserMenu = true">
+          <!-- <n-button type="primary" @click="showUserMenu = true">
             添加自定义菜单
-          </n-button>
-          <n-icon :color="themeVars.primaryColor"  @click="showAddUrl = true">
-            <circle-plus></circle-plus>
-          </n-icon>
+          </n-button> -->
         </n-space>
       </div>
     </div>
@@ -103,6 +108,7 @@
           <div>2.支持秒传链接(PikPak://PikPak Tutorial.mp4|19682618|123)秒传链接默认保存到当前文件夹或第一个文件夹不能保存到根目录</div>
           <div>3.支持新建文件夹（普通格式，不带:）</div>
           <div>4.换行添加多个</div>
+          <div>5.支持在页面按下Ctrl+v粘贴磁链时自动添加任务(会排除在输入框的操作)</div>
         </n-alert>
         <br />
         <n-input type="textarea" :rows="4" placeholder="请按说明填写" v-model:value="newUrl"></n-input>
@@ -245,7 +251,7 @@ import http, { notionHttp, asyncPool } from '../utils/axios'
 import { useRoute, useRouter } from 'vue-router'
 import { DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, NFormItem, NTag, NText, NInputGroup } from 'naive-ui'
 import { CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, ZoomQuestion } from '@vicons/tabler'
-import { byteConvert } from '../utils'
+import { byteConvert, delay, getMagnetLinksFromText } from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
 import ClipboardJS from 'clipboard'
@@ -590,7 +596,25 @@ import axios, { AxiosInstance } from 'axios'
       // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
       return '还有待下载文件?'
     }
+
+    document.onpaste = handlePaste
   })
+
+  // 粘贴时间处理（自动填写添加内容，甚至可以直接提交添加）
+  const handlePaste = async (e: any) => {
+    const tag = (e.target ? e.target.tagName : '').toLowerCase()
+    const isTagValid = ['input', 'textarea', 'file'].includes(tag)
+    const text = e.clipboardData.getData('text').trim()
+    const links = getMagnetLinksFromText(text)
+    if (!isTagValid && links.length) {
+      window.$message.info('自动填写粘贴的内容并提交...')
+      newUrl.value = links.join("\n")
+      showAddUrl.value = true
+      await delay(1000)
+      addUrl()
+    }
+  }
+
   const fileInfo = ref()
   const getFile = (id:string) => {
     return http.get('https://api-drive.mypikpak.com/drive/v1/files/' + id, {
