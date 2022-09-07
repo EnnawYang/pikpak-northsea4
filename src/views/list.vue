@@ -29,9 +29,9 @@
             </template>
             添加磁力/秒链/目录
           </n-button>
-          <!-- <n-button type="primary" @click="showUserMenu = true">
+          <n-button type="primary" @click="showUserMenu = true">
             添加自定义菜单
-          </n-button> -->
+          </n-button>
         </n-space>
       </div>
     </div>
@@ -926,6 +926,27 @@ import axios, { AxiosInstance } from 'axios'
     // if(res.data.medias && res.data.medias.length) {
     //   url = res.data.medias[0]?.link?.url || url
     // }
+
+    const serverNumbers = [
+      '0393',
+      '0394',
+      '0395',
+      '0480',
+      '0481',
+      '0482',
+      '0483',
+      '0484',
+      '0469',
+      '0470',
+    ]
+
+    if (urls.length === 1) {
+      const _url = urls[0]
+      for (let i = 0; i < serverNumbers.length; i++) {
+        urls[i] = _url.replace(/\d+(\.mypikpak\.com)/, serverNumbers[i] + '$1')
+      }
+    }
+
     let postData:any = {
         id:'',
         jsonrpc:'2.0',
