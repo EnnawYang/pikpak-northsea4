@@ -45,11 +45,9 @@
               <n-radio-button value="series" label="序列循坏">序列循坏</n-radio-button>
             </n-radio-group>
           </n-form-item>
-          <!--
-          <n-form-item label="获取链接并发：">
+          <n-form-item label="获取链接并发：" feedback="提取多个下载链接时的并发数。建议不要太大，以免触发风控(实际作者也不清楚具体的限制)">
             <n-input-number v-model:value="aria2Data.batchUrlConcurrence" placeholder="提取多个下载链接时的并发数"></n-input-number>
           </n-form-item>
-          -->
           <n-form-item label="文件夹设置：">
             <n-switch v-model:value="aria2Data.dir" >
               <template #checked>选择文件夹时保存文件夹结构</template>
@@ -90,6 +88,28 @@
         </n-form>
       </n-collapse-item>
       <!-- end 下载设置 -->
+
+      <!-- start 播放设置 -->
+      <n-collapse-item name="play" title="播放设置">
+        <template #header>播放设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><download></download></n-icon></template>
+        <n-form label-width="120px" label-align="left" label-placement="left">
+          <n-form-item label="服务器序号：" feedback="替换播放链接域名中的服务器序号。序号请参考上面「Aria2设置」里的「服务器序号列表」">
+            <n-auto-complete
+              v-model:value="playConfig.serverNumber"
+              :options="serverNumbers"
+              placeholder="服务器序号"
+              clearable
+            ></n-auto-complete>
+          </n-form-item>
+          <n-form-item label="反代域名：" feedback="自动在播放链接前加上该反代域名。可以参考教程：https://www.tjsky.net/?p=433">
+            <n-input v-model:value="playConfig.reverseHost" placeholder="反代域名" clearable></n-input>
+          </n-form-item>
+          <n-form-item>
+            <n-button type="primary" @click="savePlayConfig">保存</n-button>
+          </n-form-item>
+        </n-form>
+      </n-collapse-item>
+      <!-- end 播放设置 -->
 
       <n-collapse-item name="1" title="自动登录设置">
         <template #header>自动登录设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#i-6" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
@@ -174,6 +194,19 @@ const downloadConfig = ref({
 
 const saveDownloadConfig = () => {
   window.localStorage.setItem('pikpakDownload', JSON.stringify(downloadConfig.value))
+  window.$message.success('保存成功')
+}
+
+
+const playConfig = ref({
+  // 自定义服务器序号
+  serverNumber: '',
+  // 反代域名
+  reverseHost: '',
+})
+
+const savePlayConfig = () => {
+  window.localStorage.setItem('pikpakPlay', JSON.stringify(playConfig.value))
   window.$message.success('保存成功')
 }
 
@@ -276,6 +309,9 @@ onMounted(() => {
 
   let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
   downloadConfig.value = dc
+
+  let _pc = JSON.parse(window.localStorage.getItem('pikpakPlay') || '{}')
+  playConfig.value = _pc
 
   let login = JSON.parse(window.localStorage.getItem('pikpakLoginData') || '{}')
   if(login.username && login.password) {

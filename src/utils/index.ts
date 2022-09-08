@@ -88,6 +88,18 @@ export const refineDownloadUrl = (config: any, url: string) => {
   return url
 }
 
+export const refinePlayUrl = (config: any, url: string) => {
+  if (config.serverNumber) {
+    url = url.replace(/\d+(\.mypikpak\.com)/, config.serverNumber + '$1')
+  }
+
+  if (config.reverseHost) {
+    url = ensureEndingSlash(config.reverseHost, true) + url
+  }
+  
+  return url
+}
+
 export const refineAria2DownloadUrl = (config: any, url: string, lastChoosenServerNumberIndex: number) => {
   if (config.reverseHost) {
     url = ensureEndingSlash(config.reverseHost, true) + url

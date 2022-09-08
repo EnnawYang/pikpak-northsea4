@@ -15,4 +15,4 @@ export const serverNumbers = [
   '0470',
 ]
 
-export const version = '1.3.9'
+export const version = '1.5.1'

@@ -274,7 +274,7 @@ import {
 } from '@vicons/tabler'
 import { 
   byteConvert, delay, getMagnetLinksFromText, getPikpakLinksFromText, isPikpakLink,
-  refineAria2DownloadUrl, refineDownloadUrl,
+  refineAria2DownloadUrl, refineDownloadUrl, refinePlayUrl,
 } from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
@@ -328,6 +328,10 @@ import { useListStoreWithOut } from '../store/modules/list'
                   fileInfo.value = res.data
                   if(fileInfo.value.web_content_link) {
                     if(row.mime_type.indexOf('video') != -1 || row.mime_type.indexOf('audio') != -1) {
+                      fileInfo.value.web_content_link = refinePlayUrl(playConfig.value, fileInfo.value.web_content_link)
+                      fileInfo.value.medias.forEach((item: any) => {
+                        item.link.url = refinePlayUrl(playConfig.value, item.link.url)
+                      })
                       showVideo.value = true
                     } else {
                       showImage.value = true
@@ -442,6 +446,10 @@ import { useListStoreWithOut } from '../store/modules/list'
                     .then((res:any) => {
                       fileInfo.value = res.data
                       showCopy.value = true
+                      fileInfo.value.web_content_link = refineDownloadUrl(downloadConfig.value, fileInfo.value.web_content_link)
+                      fileInfo.value.medias.forEach((item: any) => {
+                        item.link.url = refineDownloadUrl(downloadConfig.value, item.link.url)
+                      })
                     })
                   break
                 case 'aria2Post':
@@ -608,6 +616,7 @@ import { useListStoreWithOut } from '../store/modules/list'
 
   const aria2Data = ref()
   const downloadConfig = ref()
+  const playConfig = ref()
   const parentInfo = ref()
   const samllPage = ref(true)
 
@@ -628,6 +637,9 @@ import { useListStoreWithOut } from '../store/modules/list'
 
     let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
     downloadConfig.value = dc
+
+    let _pc = JSON.parse(window.localStorage.getItem('pikpakPlay') || '{}')
+    playConfig.value = _pc
 
     initPage()
     window.onbeforeunload = function (e) {
