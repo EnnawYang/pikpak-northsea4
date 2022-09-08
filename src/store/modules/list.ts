@@ -35,8 +35,8 @@ async function getAncestors(id: string): Promise<Array<FileInfo>> {
   const item = await getFileInfo(id)
   items.push(item)
   if (item.parent_id) {
-    const p = await getFileInfo(item.parent_id)
-    items = [ ...[p], ...items ]
+    const _items = await getAncestors(item.parent_id)
+    items = [ ..._items, ...items ]
   }
   return items
 }

@@ -8,19 +8,34 @@
           </n-breadcrumb-item>
           <n-breadcrumb-item v-for="(pathItem, k) in listStore.paths" :key="k">
             <router-link :to="`/redirect/list/${pathItem.id}`">
-              {{pathItem.name}}
+              <n-tooltip placement="bottom" trigger="hover">
+                <template #trigger>
+                  {{pathItem.name}}
+                </template>
+                <span>{{pathItem.name}}</span>
+              </n-tooltip>
             </router-link>
           </n-breadcrumb-item>
         </n-breadcrumb>
       </div>
       <div class="action">
         <n-space>
-          <n-button type="default" @click="movePost" v-if="moveFiles?.length">
-            粘贴已剪切{{moveFiles.length}}项资源
-          </n-button>
-          <n-button v-if="copyFiles?.length" @click="copyPost">
-            粘贴已复制{{copyFiles.length}}项资源
-          </n-button>         
+          <n-popover v-if="moveFiles?.length" trigger="hover">
+            <template #trigger>
+              <n-button type="default" @click="movePost">
+                粘贴已剪切{{moveFiles.length}}项资源
+              </n-button>
+            </template>
+            <n-button type="warning" @click="movePost('cancel')">取消剪贴</n-button>
+          </n-popover>
+          <n-popover v-if="copyFiles?.length" trigger="hover">
+            <template #trigger>
+              <n-button @click="copyPost">
+                粘贴已复制{{copyFiles.length}}项资源
+              </n-button>   
+            </template>
+            <n-button type="warning" @click="copyPost('cancel')">取消复制</n-button>
+          </n-popover>     
           <n-button type="primary" @click="showAddUrl = true">
             <template #icon>
               <n-icon><circle-plus/></n-icon>
@@ -28,9 +43,6 @@
             磁力/秒链/目录
           </n-button>
           <n-button @click="showUserMenu = true">
-            <template #icon>
-              <n-icon :color="themeVars.primaryColor"><circle-plus/></n-icon>
-            </template>
             自定义菜单
           </n-button>
         </n-space>
@@ -254,7 +266,7 @@ import {
   DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, 
   NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, 
   NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, 
-  NFormItem, NTag, NText, NInputGroup 
+  NFormItem, NTag, NText, NInputGroup, NPopover,
 } from 'naive-ui'
 import { 
   CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, 
@@ -970,9 +982,7 @@ import { useListStoreWithOut } from '../store/modules/list'
     }
 
     if (!isBuff) {
-      if (aria2Data.value.serverNumber) {
-        urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
-      }
+      urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
     } else {
       urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k))
     }
@@ -1053,7 +1063,13 @@ import { useListStoreWithOut } from '../store/modules/list'
     window.localStorage.setItem('pikpakCopyFiles', JSON.stringify(items))
     window.$message.success('复制成功，请点击页面右上方粘贴按钮')
   }
-  const movePost = () => {
+  const movePost = (e: any) => {
+    if (e === 'cancel') {
+      window.localStorage.removeItem('pikpakMoveFiles')
+      window.$message.success('已取消')
+      moveFiles.value = []
+      return
+    }
     http.post('https://api-drive.mypikpak.com/drive/v1/files:batchMove',{
       "to":{
         "parent_id": route.params.id || ''
@@ -1068,7 +1084,13 @@ import { useListStoreWithOut } from '../store/modules/list'
         window.localStorage.removeItem('pikpakMoveFiles')
       })
   }
-  const copyPost = () => {
+  const copyPost = (e: any) => {
+    if (e === 'cancel') {
+      window.localStorage.removeItem('pikpakCopyFiles')
+      window.$message.success('已取消')
+      copyFiles.value = []
+      return
+    }
     http.post('https://api-drive.mypikpak.com/drive/v1/files:batchCopy',{
       "to":{
         "parent_id": route.params.id || ''
@@ -1444,5 +1466,28 @@ import { useListStoreWithOut } from '../store/modules/list'
     bottom: 52px;
   }
 }
+</style>
 
+<style lang="scss">
+.list-page {
+  .n-breadcrumb ul {
+    display: flex;
+    max-width: 90%;
+    .n-breadcrumb-item {
+      display: inline-flex;
+      min-width: 0;
+      .n-breadcrumb-item__link {
+        max-width: 240px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      &:nth-child(1),
+      &:nth-last-child(1) {
+        //background: rgb(67, 211, 27);
+        flex-shrink: 0;
+      }
+    }
+  }
+}
 </style>
