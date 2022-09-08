@@ -37,8 +37,8 @@ jobs:
           CNAME_DOMAIN: ${{ secrets.CNAME_DOMAIN }} # CNAME域名
         run: |
           [ $CF_DOMAIN ] && {
-            [ "$CF_DOMAIN" == "DIRECT" ] && sed -i "/\[/,/]/cexport const proxy = []" src/config/index.ts || \
-            sed -i "/\[/,/]/cexport const proxy = ['https://$CF_DOMAIN']" src/config/index.ts;
+            [ "$CF_DOMAIN" == "DIRECT" ] && sed -i "/proxy\ \=\ \[/,/]/cexport const proxy = []" src/config/index.ts || \
+            sed -i "/proxy\ \=\ \[/,/]/cexport const proxy = ['https://$CF_DOMAIN']" src/config/index.ts;
           }
           [ $BASE_PATH ] || BASE_PATH="/${REPO_NAME}"
           [ "$BASE_PATH" != "/pikpak" ] && sed -i "s|/pikpak|$BASE_PATH|g" vite.config.ts
