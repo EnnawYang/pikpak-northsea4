@@ -1,5 +1,18 @@
 export const proxy = [
-  'https://api-pikpak.go-back.cf',
+  'https://api-pikpak.go-back.cf'
 ]
 
-export const version = '1.2.6'
+export const serverNumbers = [
+  '0393',
+  '0394',
+  '0395',
+  '0480',
+  '0481',
+  '0482',
+  '0483',
+  '0484',
+  '0469',
+  '0470',
+]
+
+export const version = '1.3.5'

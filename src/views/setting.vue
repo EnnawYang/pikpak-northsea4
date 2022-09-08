@@ -1,50 +1,96 @@
 <template>
   <div class="list-page">
-    <n-collapse :default-expanded-names="['-1', '0', '2', '3']">
+    <n-collapse :default-expanded-names="['-1', '0', '2', '3', 'download']">
       <n-collapse-item name="-1" >
         <template #header>
           绑定telegram   <a @click.stop="" href="https://www.tjsky.net/?p=220#Telegram" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a>
         </template>
         <n-input v-model:value="telegramUrl" placeholder="复制telegram绑定链接到这"></n-input>
         <p></p>
-        <n-button :disabled="!telegramUrl" type="primary" @click="goTelegram">Telegram绑定</n-button>
+        <n-button :disabled="!telegramUrl" type="primary" @click="goTelegram">Telegram绑定</n-button>&nbsp; 
         <a href="https://t.me/PikPak_Bot" target="_blank">Telegram机器人地址</a>
       </n-collapse-item>
-      <n-collapse-item name="0" title="aria2设置">
-        <template #header>aria2设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#arai2" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
-        <n-form label-width="150px" label-align="left" label-placement="left">
-          <n-form-item label="aria2链接：">
-            <n-input v-model:value="aria2Data.host" placeholder="例如http://localhost:6800/jsonrpc"></n-input>
+
+      <!-- start Aria2设置 -->
+      <n-collapse-item name="0" title="Aria2设置">
+        <template #header>Aria2设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#arai2" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
+        <n-form label-width="120px" label-align="left" label-placement="left" autocomplete="off">
+          <n-form-item label="Aria2链接：">
+            <n-input v-model:value="aria2Data.host" placeholder="例如http://localhost:6800/jsonrpc" clearable></n-input>
           </n-form-item>
-          <n-form-item label="aria2Token：">
-            <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown"></n-input>
+          <n-form-item label="Aria2 Token：">
+            <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown" clearable></n-input>
           </n-form-item>
-          <n-form-item label="下载服务器序号：">
-            <n-input v-model:value="aria2Data.serverNumber" placeholder="替换下载链接里的服务器序号"></n-input>
+          <!-- TODO nativeui v2.24.0 才有feedback这个slot -->
+          <n-form-item label="反代域名：" feedback="对全部Aria2下载生效。可以参考教程：https://www.tjsky.net/?p=433">
+            <n-input v-model:value="aria2Data.reverseHost" placeholder="例如http://pcdn.xx.com" clearable></n-input>
           </n-form-item>
-          <n-form-item label="单个文件链接数量：">
-            <n-input-number v-model:value="aria2Data.batchUrlNum" placeholder="需要推送多少个链接并发下载"></n-input-number>
+          <n-form-item label="服务器序号：" feedback="仅对「推送到Aria2」生效">
+            <n-auto-complete
+              v-model:value="aria2Data.serverNumber"
+              :options="aria2Data.serverNumbers"
+              placeholder="下载服务器序号"
+              clearable
+            ></n-auto-complete>
           </n-form-item>
+          <n-form-item label="服务器列表：">
+            <n-dynamic-tags v-model:value="aria2Data.serverNumbers" />
+          </n-form-item>
+          <n-form-item label="叠加数量：" feedback="对应功能「Aria2-Buff」。使用多个链接下载一个文件，适合需要更快下载某个文件的场景">
+            <n-input-number v-model:value="aria2Data.batchUrlNum" placeholder="需要推送多少个链接下载一个文件" :min="0" :max="64"></n-input-number>
+          </n-form-item>
+          <n-form-item label="叠加策略：" feedback="「自然选择」：取到什么就用什么；「序列循坏」：从「服务器序号列表」中从头到尾选取">
+            <n-radio-group v-model:value="aria2Data.batchStrategy">
+              <n-radio-button value="natural" label="自然选择">自然选择</n-radio-button>
+              <n-radio-button value="series" label="序列循坏">序列循坏</n-radio-button>
+            </n-radio-group>
+          </n-form-item>
+          <!--
           <n-form-item label="获取链接并发：">
             <n-input-number v-model:value="aria2Data.batchUrlConcurrence" placeholder="提取多个下载链接时的并发数"></n-input-number>
           </n-form-item>
+          -->
           <n-form-item label="文件夹设置：">
             <n-switch v-model:value="aria2Data.dir" >
               <template #checked>选择文件夹时保存文件夹结构</template>
               <template #unchecked>选择文件夹时仅保存文件</template>
             </n-switch>
           </n-form-item>
-          <n-alert title="由于浏览器限制，请按下图设置开始混合模式" type="info"  v-if="aria2Data.host && aria2Data.host.indexOf('https://') === -1 && aria2Data.host.indexOf('http://localhost') == -1 && aria2Data.host.indexOf('http://127.0.0.1') === -1">
-            <img src="../assets/aria2-tip-1.png" alt=""> 
-            <br />
-            <br />
-            <img src="../assets/aria2-tip-2.png" alt="">
+          <n-alert type="warning" title="由于浏览器限制，请在浏览器的「网站设置」中，将「不安全内容」设置为「允许」" v-if="browserTipsVisible">
+            <div>
+              <img src="../assets/aria2-tip-1.png" alt=""/>&nbsp; 
+              <img src="../assets/aria2-tip-2.png" alt=""/>
+            </div>
           </n-alert>
           <n-form-item>
             <n-button type="primary" @click="testAria2">测试并保存</n-button>
           </n-form-item>
         </n-form>
       </n-collapse-item>
+      <!-- end Aria2设置 -->
+
+      <!-- start 下载设置 -->
+      <n-collapse-item name="download" title="下载设置">
+        <template #header>下载设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><download></download></n-icon></template>
+        <n-form label-width="120px" label-align="left" label-placement="left">
+          <n-form-item label="服务器序号：" feedback="替换下载链接域名中的服务器序号。序号请参考上面「Aria2设置」里的「服务器序号列表」">
+            <n-auto-complete
+              v-model:value="downloadConfig.serverNumber"
+              :options="serverNumbers"
+              placeholder="下载服务器序号"
+              clearable
+            ></n-auto-complete>
+          </n-form-item>
+          <n-form-item label="反代域名：" feedback="自动在下载链接前加上该反代域名。可以参考教程：https://www.tjsky.net/?p=433">
+            <n-input v-model:value="downloadConfig.reverseHost" placeholder="反代域名" clearable></n-input>
+          </n-form-item>
+          <n-form-item>
+            <n-button type="primary" @click="saveDownloadConfig">保存</n-button>
+          </n-form-item>
+        </n-form>
+      </n-collapse-item>
+      <!-- end 下载设置 -->
+
       <n-collapse-item name="1" title="自动登录设置">
         <template #header>自动登录设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#i-6" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
         <n-form label-width="100px" label-align="left" label-placement="left">
@@ -64,12 +110,15 @@
           </n-form-item>
         </n-form>
       </n-collapse-item>
+
       <n-collapse-item name="3" title="代理设置">
         <n-input type="textarea" v-model:value="proxyData" rows="4" placeholder="支持多个随机，一行一个，为空则不代理"></n-input>
         <p></p>
         <n-button type="primary" @click="proxyPost">保存设置</n-button>
+        &nbsp;&nbsp;
         <n-text @click="proxyReset">恢复默认</n-text>
       </n-collapse-item>
+
       <n-collapse-item title="关于" name="2">
         <n-space>
           <a href="https://mypikpak.com/" target="_blank" class="n-button">官方网站</a>
@@ -79,6 +128,7 @@
         </n-space>
         <br />
       </n-collapse-item>
+
       <n-collapse-item title="功能列表" name="3">
         <n-log :lines="logs"></n-log>
       </n-collapse-item>
@@ -87,12 +137,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from '@vue/reactivity';
+import { ref, computed } from '@vue/reactivity';
 import { onMounted } from '@vue/runtime-core';
 import http from '../utils/axios'
-import { NForm, NFormItem, NButton, NInput, NText, NInputNumber, NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, NAlert, NLog, NIcon } from 'naive-ui'
-import { ZoomQuestion } from '@vicons/tabler'
-import {proxy as proxyDefault} from '../config'
+import { isCrossOrigin } from '../utils'
+import { 
+  NForm, NFormItem, NButton, NInput, NText, NInputNumber,
+  NCollapse, NCollapseItem, NSpace, NSwitch, useDialog, 
+  NAlert, NLog, NIcon, NAutoComplete, NRadioGroup, NRadioButton,
+  NDynamicTags,
+} from 'naive-ui'
+import { ZoomQuestion, Download } from '@vicons/tabler'
+import {
+  proxy as proxyDefault,
+  serverNumbers
+} from '../config'
+
 const logs = ref([
   '手机注册登陆',
   '添加推广下载',
@@ -104,14 +164,39 @@ const logs = ref([
   '资源库分页，分享秒传支持文件及',
   '....'
 ])
+
+const downloadConfig = ref({
+  // 自定义服务器序号
+  serverNumber: '',
+  // 反代域名
+  reverseHost: '',
+})
+
+const saveDownloadConfig = () => {
+  window.localStorage.setItem('pikpakDownload', JSON.stringify(downloadConfig.value))
+  window.$message.success('保存成功')
+}
+
 const aria2Data = ref({
-  host: '',
+  host: 'http://localhost:6800/jsonrpc',
   token: '',
   dir: true,
+  // 自定义服务器序号
   serverNumber: '',
+  // 使用多少个链接下载同一个文件
   batchUrlNum: 1,
-  batchUrlConcurrence: 1,
+  // TODO 获取下载链接并发（目前没实现真的并发）
+  batchUrlConcurrence: 4,
+  serverNumbers: serverNumbers,
+  // 叠加策略
+  batchStrategy: 'natural',
+  // 反代域名
+  reverseHost: '',
 })
+
+
+const browserTipsVisible = computed(() => aria2Data.value.host && isCrossOrigin(aria2Data.value.host))
+
 const testAria2 = () => {
   let postData:any = {
       id:'',
@@ -140,6 +225,7 @@ const testAria2 = () => {
     })
     .catch(error => console.error('Error:', error))
 }
+
 const loginSwitch = ref(false)
 const loginData = ref({
   username: '',
@@ -163,6 +249,7 @@ const loginPost = () => {
     window.localStorage.removeItem('pikpakLoginData')
   }
 }
+
 const proxyData = ref('')
 const proxyPost = () => {
   let proxyValue = proxyData.value.split('\n').filter(item => item != '')
@@ -174,14 +261,22 @@ const proxyReset = () => {
   window.localStorage.removeItem('isSettingProxy')
   proxyData.value = proxyDefault.join('\n')
 }
+
 onMounted(() => {
   let aria2 = JSON.parse(window.localStorage.getItem('pikpakAria2') || '{}')
   if(aria2.dir === undefined) {
     aria2.dir = true
   }
+  if(aria2.serverNumbers === undefined) {
+    aria2.serverNumbers = serverNumbers
+  }
   if(aria2.host) {
     aria2Data.value = aria2
   }
+
+  let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
+  downloadConfig.value = dc
+
   let login = JSON.parse(window.localStorage.getItem('pikpakLoginData') || '{}')
   if(login.username && login.password) {
     loginData.value = login
@@ -192,6 +287,7 @@ onMounted(() => {
     proxyData.value = proxy.join('\n')
   }
 })
+
 const telegramUrl = ref()
 const goTelegram = () => {
   let login = JSON.parse(window.localStorage.getItem('pikpakLogin') || '{}')

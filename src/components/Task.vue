@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container" :class="{ 'is-empty': !filesList?.length }">
     <div class="content " :class="{hide: hide}">
       <div class="status-bar" @click="hide = !hide">
         <div class="status-bar-wrapper">
@@ -136,6 +136,9 @@ import { CircleX } from '@vicons/tabler'
   width: 375px;
   right: 32px;
   bottom: 28px;
+}
+.container.is-empty {
+  width: 150px;
 }
 @media(max-width: 968px) {
   .container {

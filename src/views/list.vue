@@ -6,7 +6,7 @@
           <n-breadcrumb-item>
             <router-link to="/redirect/list">文件</router-link>
           </n-breadcrumb-item>
-          <n-breadcrumb-item v-for="(pathItem, k) in pathItems" :key="k">
+          <n-breadcrumb-item v-for="(pathItem, k) in listStore.paths" :key="k">
             <router-link :to="`/redirect/list/${pathItem.id}`">
               {{pathItem.name}}
             </router-link>
@@ -21,16 +21,17 @@
           <n-button v-if="copyFiles?.length" @click="copyPost">
             粘贴已复制{{copyFiles.length}}项资源
           </n-button>         
-          <n-button @click="showAddUrl = true">
+          <n-button type="primary" @click="showAddUrl = true">
             <template #icon>
-              <n-icon :color="themeVars.primaryColor">
-                <circle-plus></circle-plus>
-              </n-icon>
+              <n-icon><circle-plus/></n-icon>
             </template>
-            添加磁力/秒链/目录
+            磁力/秒链/目录
           </n-button>
-          <n-button type="primary" @click="showUserMenu = true">
-            添加自定义菜单
+          <n-button @click="showUserMenu = true">
+            <template #icon>
+              <n-icon :color="themeVars.primaryColor"><circle-plus/></n-icon>
+            </template>
+            自定义菜单
           </n-button>
         </n-space>
       </div>
@@ -88,7 +89,7 @@
           <n-tooltip>
             <template #trigger>
               <n-icon>
-                <circle-x></circle-x>
+                <trash></trash>
               </n-icon>
             </template>
             删除所选
@@ -108,7 +109,7 @@
           <div>2.支持秒传链接(PikPak://PikPak Tutorial.mp4|19682618|123)秒传链接默认保存到当前文件夹或第一个文件夹不能保存到根目录</div>
           <div>3.支持新建文件夹（普通格式，不带:）</div>
           <div>4.换行添加多个</div>
-          <div>5.支持在页面按下Ctrl+v粘贴磁链时自动添加任务(会排除在输入框的操作)</div>
+          <div>5.支持在页面按下Ctrl+v粘贴`磁链`或`秒传链接`时自动添加任务(会排除在输入框的操作)</div>
         </n-alert>
         <br />
         <n-input type="textarea" :rows="4" placeholder="请按说明填写" v-model:value="newUrl"></n-input>
@@ -249,29 +250,33 @@ import { ref } from '@vue/reactivity';
 import { h, computed, onMounted, watch, nextTick } from '@vue/runtime-core'
 import http, { notionHttp, asyncPool } from '../utils/axios'
 import { useRoute, useRouter } from 'vue-router'
-import { DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, NFormItem, NTag, NText, NInputGroup } from 'naive-ui'
-import { CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, ZoomQuestion } from '@vicons/tabler'
-import { byteConvert, delay, getMagnetLinksFromText } from '../utils'
+import { 
+  DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, 
+  NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, 
+  NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, 
+  NFormItem, NTag, NText, NInputGroup 
+} from 'naive-ui'
+import { 
+  CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, 
+  ZoomQuestion, Trash 
+} from '@vicons/tabler'
+import { 
+  byteConvert, delay, getMagnetLinksFromText, getPikpakLinksFromText, isPikpakLink,
+  refineAria2DownloadUrl, refineDownloadUrl,
+} from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
 import ClipboardJS from 'clipboard'
 import streamSaver from 'streamsaver'
 import { DropdownMixedOption } from 'naive-ui/lib/dropdown/src/interface'
 import axios, { AxiosInstance } from 'axios'
+import { useListStoreWithOut } from '../store/modules/list'
+
   const filesList = ref()
-  const pathItems = ref<any>([])
   const route = useRoute()
   const router = useRouter()
-  interface FileInfo {
-    kind: string,
-    mine_type: string,
-    id: string,
-    thumbnail_link: string,
-    icon_link: string,
-    name: string,
-    size: number,
-    hash: string
-  }
+  const listStore = useListStoreWithOut()
+
   const themeVars = useThemeVars()
   const checkedRowKeys = ref<string[]>([])
   const dialog = useDialog()
@@ -544,19 +549,40 @@ import axios, { AxiosInstance } from 'axios'
     moveFiles.value = JSON.parse(window.localStorage.getItem('pikpakMoveFiles') || '[]')
     copyFiles.value = JSON.parse(window.localStorage.getItem('pikpakCopyFiles') || '[]')
     userMenu.value = JSON.parse(window.localStorage.getItem('pikpakUserMenu') || '[]')
-    filesList.value = []
+    
     checkedRowKeys.value = []
+
+    const dirId = route.params.id
+    if (route.path.indexOf('/list') !== 0) {
+      return
+    }
+
+    if (!dirId || dirId === '*') {
+      listStore.clear()
+    } else {
+      if (filesList.value && filesList.value.length) {
+        const dir: FileInfo = filesList.value.find((f: FileInfo) => f.id === dirId)
+        if (dir) {
+          listStore.push(dir)
+        }
+      } else {
+        listStore.pushId(dirId, true)
+      }
+    }
+
+    filesList.value = []
+
     pageToken.value = ''
     getFileList()
     parentInfo.value = {}
-    pathItems.value = []
-    if(route.params.id && route.params.id !== '*') {
-      getFile(String(route.params.id))
-        .then(res => {
-          parentInfo.value = res.data
-          pathItems.value = [res.data]
-        })
-    }
+    // listStore.clear()
+    // if(route.params.id && route.params.id !== '*') {
+    //   getFile(String(route.params.id))
+    //     .then(res => {
+    //       parentInfo.value = res.data
+    //       listStore.push(res.data)
+    //     })
+    // }
   }
 
   watch(route, () => {
@@ -564,6 +590,7 @@ import axios, { AxiosInstance } from 'axios'
   })
 
   const aria2Data = ref()
+  const downloadConfig = ref()
   const parentInfo = ref()
   const samllPage = ref(true)
 
@@ -581,6 +608,10 @@ import axios, { AxiosInstance } from 'axios'
     if(aria2.host) {
       aria2Data.value = aria2
     }
+
+    let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
+    downloadConfig.value = dc
+
     initPage()
     window.onbeforeunload = function (e) {
       if(!window.$downId || window.$downId.length === 0) {
@@ -600,14 +631,20 @@ import axios, { AxiosInstance } from 'axios'
     document.onpaste = handlePaste
   })
 
-  // 粘贴时间处理（自动填写添加内容，甚至可以直接提交添加）
+  // 粘贴事件处理（自动填写添加内容，直接提交添加）
   const handlePaste = async (e: any) => {
     const tag = (e.target ? e.target.tagName : '').toLowerCase()
     const isTagValid = !['input', 'textarea', 'file'].includes(tag)
+    const isOnEditMode = document.designMode === 'on' || e.target.contentEditable === true
+    if (!isTagValid || isOnEditMode) {
+      return
+    }
     const text = e.clipboardData.getData('text').trim()
-    const links = getMagnetLinksFromText(text)
-    if (isTagValid && links.length) {
-      window.$message.info('自动填写粘贴的内容并提交...')
+    const magnetLinks = getMagnetLinksFromText(text, false)
+    const pikpakLinks = getPikpakLinksFromText(text, false)
+    const links = [ ...magnetLinks, ...pikpakLinks ]
+    if (links.length) {
+      window.$message.info(`自动填写粘贴的内容并提交...`)
       newUrl.value = links.join("\n")
       showAddUrl.value = true
       await delay(1000)
@@ -664,7 +701,8 @@ import axios, { AxiosInstance } from 'axios'
     urlList.forEach((url:string) => {
       if(url) {
         let postData = {}
-        if(url.indexOf('PikPak://') === 0) {
+        // 秒传
+        if(isPikpakLink(url)) {
           const urlData = url.substring(9).split('|')
           hasHash = true
           postData = {
@@ -675,10 +713,12 @@ import axios, { AxiosInstance } from 'axios'
               hash: urlData[2],
               upload_type: "UPLOAD_TYPE_RESUMABLE",
               objProvider: {
-                  provider: "UPLOAD_TYPE_UNKNOWN"
+                provider: "UPLOAD_TYPE_UNKNOWN"
               }
           }
-        } else if(url.indexOf(':') !== -1) {
+        } 
+        // 这里简单处理，带冒号的就就当做是磁力链接
+        else if(url.indexOf(':') !== -1) {
           hasTask = true
           postData = {
             kind: "drive#file",
@@ -691,10 +731,12 @@ import axios, { AxiosInstance } from 'axios'
             params: {"from":"file"},
             folder_type: "DOWNLOAD"
           }
-        } else {
+        } 
+        // 其他认为是`新文件夹名称`
+        else {
           hasHash = true
           postData = {
-            "kind":"drive#folder",
+            "kind": "drive#folder",
             "parent_id": route.params.id || '',
             "name": url
           }
@@ -702,7 +744,7 @@ import axios, { AxiosInstance } from 'axios'
         showAddUrl.value = false
         http.post('https://api-drive.mypikpak.com/drive/v1/files', postData)
           .then((res:any) => {
-            if(res.data.upload_type === 'UPLOAD_TYPE_UNKNOWN' || url.indexOf('PikPak://') === -1) {
+            if(res.data.upload_type === 'UPLOAD_TYPE_UNKNOWN' || !isPikpakLink(url)) {
               window.$message.success('添加成功')
             }
           })
@@ -844,7 +886,7 @@ import axios, { AxiosInstance } from 'axios'
   const aria2Buff = (id:string) => {
     getFileMultiTimes(id, aria2Data.value.batchUrlNum)
       .then((res:any) => {
-        aria2Post(res)
+        aria2Post(res, '', true)
       })
   }
 
@@ -853,7 +895,8 @@ import axios, { AxiosInstance } from 'axios'
       .then((info:any) => {
         streamSaver.mitm = 'mitm.html'
         const fileStream = streamSaver.createWriteStream(info.data.name)
-        fetch(info.data.web_content_link).then((res:any) => {
+        const url = refineDownloadUrl(downloadConfig.value, info.data.web_content_link)
+        fetch(url).then((res:any) => {
           if(!window.$downId) {
             window.$downId = []
           }
@@ -907,7 +950,7 @@ import axios, { AxiosInstance } from 'axios'
         aria2Dir.value = res?.result?.dir || ''
       })
   }
-  const aria2Post = (res:any, dir?:string) => {
+  const aria2Post = (res:any, dir?:string, isBuff:boolean = false) => {
     let urls:Array<string> = []
     let filename: string
 
@@ -920,32 +963,16 @@ import axios, { AxiosInstance } from 'axios'
       urls.push(res.data.web_content_link)
       filename = res.data.name
     }
-    if (aria2Data.value.serverNumber) {
-      urls = urls.map(url => url.replace(/\d+(\.mypikpak\.com)/, aria2Data.value.serverNumber + '$1'))
-    }
-    // if(res.data.medias && res.data.medias.length) {
-    //   url = res.data.medias[0]?.link?.url || url
-    // }
 
-    const serverNumbers = [
-      '0393',
-      '0394',
-      '0395',
-      '0480',
-      '0481',
-      '0482',
-      '0483',
-      '0484',
-      '0469',
-      '0470',
-    ]
-
-    if (urls.length === 1) {
-      const _url = urls[0]
-      for (let i = 0; i < serverNumbers.length; i++) {
-        urls[i] = _url.replace(/\d+(\.mypikpak\.com)/, serverNumbers[i] + '$1')
+    if (!isBuff) {
+      if (aria2Data.value.serverNumber) {
+        urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
       }
+    } else {
+      urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k))
     }
+
+    console.log('[urls]', urls)
 
     let postData:any = {
         id:'',
@@ -965,9 +992,9 @@ import axios, { AxiosInstance } from 'axios'
       postData.params.splice(0, 0, 'token:' + aria2Data.value.token)
     }
     fetch(aria2Data.value.host, {
-        method: 'POST',
-        body: JSON.stringify(postData),
-        headers: new Headers({
+      method: 'POST',
+      body: JSON.stringify(postData),
+      headers: new Headers({
         'Content-Type': 'application/json'
       })
     })
