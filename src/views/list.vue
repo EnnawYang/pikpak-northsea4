@@ -552,11 +552,16 @@ import { useListStoreWithOut } from '../store/modules/list'
     
     checkedRowKeys.value = []
 
-    const dirId = route.params.id
     if (route.path.indexOf('/list') !== 0) {
       return
     }
 
+    const paramId = route.params.id
+    let dirId = ''
+    if (typeof paramId === 'string') {
+      dirId = paramId
+    }
+    
     if (!dirId || dirId === '*') {
       listStore.clear()
     } else {
