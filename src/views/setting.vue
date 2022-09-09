@@ -21,6 +21,12 @@
           <n-form-item label="Aria2 Token：">
             <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown" clearable></n-input>
           </n-form-item>
+          <n-form-item label="限制连接数：" feedback="一个下载链接只使用一个网络连接(线程)，使用反代时，建议开启，避免429。如不开启，请查看Arai2默认的`单任务连接数`和`单服务器最大连接数`">
+            <n-switch v-model:value="aria2Data.restrictConnections">
+              <template #checked>开启 - 避免请求频繁</template>
+              <template #unchecked>不开启 - Aria2默认控制</template>
+            </n-switch>
+          </n-form-item>
           <!-- TODO nativeui v2.24.0 才有feedback这个slot -->
           <n-form-item label="反代域名：" feedback="对全部Aria2下载生效。可以参考教程：https://www.tjsky.net/?p=433">
             <n-input v-model:value="aria2Data.reverseHost" placeholder="例如http://pcdn.xx.com" clearable></n-input>
@@ -214,6 +220,7 @@ const aria2Data = ref({
   host: 'http://localhost:6800/jsonrpc',
   token: '',
   dir: true,
+  restrictConnections: true,
   // 自定义服务器序号
   serverNumber: '',
   // 使用多少个链接下载同一个文件

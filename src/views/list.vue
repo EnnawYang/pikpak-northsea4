@@ -1001,16 +1001,18 @@ import { useListStoreWithOut } from '../store/modules/list'
 
     console.log('[urls]', urls)
 
+    const params: any = [urls, { out: filename }]
+    if (aria2Data.value.restrictConnections) {
+      // 貌似同时指定不会生效，这里单独指定`max-connection-per-server`
+      // params[1]['split'] = urls.length
+      params[1]['max-connection-per-server'] = '1'
+    }
+
     let postData:any = {
         id:'',
         jsonrpc:'2.0',
         method:'aria2.addUri',
-        params:[
-            urls,
-            {
-              out: filename
-            }
-        ]
+        params,
     }
     if(dir && aria2Dir.value) {
       postData.params[1].dir = aria2Dir.value + '/' + dir
