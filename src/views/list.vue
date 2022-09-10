@@ -8,7 +8,7 @@
           </n-breadcrumb-item>
           <n-breadcrumb-item v-for="(pathItem, k) in listStore.paths" :key="k">
             <router-link :to="`/redirect/list/${pathItem.id}`">
-              <n-tooltip placement="bottom" trigger="hover">
+              <n-tooltip placement="bottom-start" trigger="hover">
                 <template #trigger>
                   {{pathItem.name}}
                 </template>
@@ -26,7 +26,7 @@
                 粘贴已剪切{{moveFiles.length}}项资源
               </n-button>
             </template>
-            <n-button type="warning" @click="movePost('cancel')">取消剪贴</n-button>
+            <n-button type="warning" @click="movePost('cancel')">取消剪切</n-button>
           </n-popover>
           <n-popover v-if="copyFiles?.length" trigger="hover">
             <template #trigger>
@@ -572,27 +572,27 @@ import { useListStoreWithOut } from '../store/modules/list'
     
     checkedRowKeys.value = []
 
-    if (route.path.indexOf('/list') !== 0) {
-      return
-    }
-
-    const paramId = route.params.id
-    let dirId = ''
-    if (typeof paramId === 'string') {
-      dirId = paramId
-    }
-    
-    if (!dirId || dirId === '*') {
-      listStore.clear()
-    } else {
-      if (filesList.value && filesList.value.length) {
-        const dir: FileInfo = filesList.value.find((f: FileInfo) => f.id === dirId)
-        if (dir) {
-          listStore.push(dir)
-        }
-      } else {
-        listStore.pushId(dirId, true)
+    if (route.path.indexOf('/list') === 0) {
+      const paramId = route.params.id
+      let dirId = ''
+      if (typeof paramId === 'string') {
+        dirId = paramId
       }
+      
+      if (!dirId || dirId === '*') {
+        listStore.clear()
+      } else {
+        if (filesList.value && filesList.value.length) {
+          const dir: FileInfo = filesList.value.find((f: FileInfo) => f.id === dirId)
+          if (dir) {
+            listStore.push(dir)
+          }
+        } else {
+          listStore.pushId(dirId, true)
+        }
+      }
+    } else if (route.path.indexOf('/redirect/list') !== 0) {
+      listStore.clear()
     }
 
     filesList.value = []
@@ -600,14 +600,6 @@ import { useListStoreWithOut } from '../store/modules/list'
     pageToken.value = ''
     getFileList()
     parentInfo.value = {}
-    // listStore.clear()
-    // if(route.params.id && route.params.id !== '*') {
-    //   getFile(String(route.params.id))
-    //     .then(res => {
-    //       parentInfo.value = res.data
-    //       listStore.push(res.data)
-    //     })
-    // }
   }
 
   watch(route, () => {

@@ -63,27 +63,21 @@ export const useListStore = defineStore({
       //    如果不在：如果`path.parent_id`是paths的最后一个，则将该path追加到paths尾部，
       //       否则，重新获取全部
       if (!path.parent_id) {
-        // console.log('[empty parent_id] 重置为该path')
         this.set([path])
       } else {
         const index = isInPaths(path, this.paths)
         if (index >= 0) {
-          // console.log('[inPaths]', index)
           this.paths.splice(index + 1)
         } else {
-          // console.log('[not in paths]', index)
           if (this.paths.length && this.paths[this.paths.length - 1].id === path.parent_id) {
-            // console.log('append')
             this.paths.push(path)
           } else {
-            // console.log('get ancestors')
             const ancestors = await getAncestors(path.parent_id)
             await this.set([ ...ancestors, ...[path] ])
           }
         }
       }
     },
-    async init() {},
     async set(paths: Array<FileInfo>) {
       this.paths = paths
     },

@@ -21,7 +21,7 @@
           <n-form-item label="Aria2 Token：">
             <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown" clearable></n-input>
           </n-form-item>
-          <n-form-item label="限制连接数：" feedback="一个下载链接只使用一个网络连接(线程)，使用反代时，建议开启，避免429。如不开启，请查看Arai2默认的`单任务连接数`和`单服务器最大连接数`">
+          <n-form-item label="限制连接数：" feedback="一个下载链接只使用一个网络连接(线程)，使用反代时，建议开启，避免429。如不开启，请查看Aria2默认的`单任务连接数`和`单服务器最大连接数`">
             <n-switch v-model:value="aria2Data.restrictConnections">
               <template #checked>开启 - 避免请求频繁</template>
               <template #unchecked>不开启 - Aria2默认控制</template>
@@ -97,7 +97,7 @@
 
       <!-- start 播放设置 -->
       <n-collapse-item name="play" title="播放设置">
-        <template #header>播放设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><download></download></n-icon></template>
+        <template #header>播放设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><Video></Video></n-icon></template>
         <n-form label-width="120px" label-align="left" label-placement="left">
           <n-form-item label="服务器序号：" feedback="替换播放链接域名中的服务器序号。序号请参考上面「Aria2设置」里的「服务器序号列表」">
             <n-auto-complete
@@ -137,13 +137,16 @@
         </n-form>
       </n-collapse-item>
 
-      <n-collapse-item name="3" title="代理设置">
+      <!-- start 代理设置 -->
+      <n-collapse-item name="3">
+        <template #header>代理设置 <n-icon style="vertical-align: middle;" size="20" color="#d03050"><wifi></wifi></n-icon></template>
         <n-input type="textarea" v-model:value="proxyData" rows="4" placeholder="支持多个随机，一行一个，为空则不代理"></n-input>
         <p></p>
         <n-button type="primary" @click="proxyPost">保存设置</n-button>
         &nbsp;&nbsp;
         <n-text @click="proxyReset">恢复默认</n-text>
       </n-collapse-item>
+      <!-- end 代理设置 -->
 
       <n-collapse-item title="关于" name="2">
         <n-space>
@@ -173,7 +176,7 @@ import {
   NAlert, NLog, NIcon, NAutoComplete, NRadioGroup, NRadioButton,
   NDynamicTags,
 } from 'naive-ui'
-import { ZoomQuestion, Download } from '@vicons/tabler'
+import { ZoomQuestion, Download, Video, Wifi, } from '@vicons/tabler'
 import {
   proxy as proxyDefault,
   serverNumbers
