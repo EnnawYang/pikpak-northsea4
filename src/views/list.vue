@@ -274,7 +274,7 @@ import {
 } from '@vicons/tabler'
 import { 
   byteConvert, delay, getMagnetLinksFromText, getPikpakLinksFromText, isPikpakLink,
-  refineAria2DownloadUrl, refineDownloadUrl, refinePlayUrl,
+  refineAria2DownloadUrl, refineDownloadUrl, refinePlayUrl, refineImageUrl,
 } from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
@@ -334,6 +334,7 @@ import { useListStoreWithOut } from '../store/modules/list'
                       })
                       showVideo.value = true
                     } else {
+                      fileInfo.value.web_content_link = refineImageUrl(playConfig.value, fileInfo.value.web_content_link)
                       showImage.value = true
                     }
                   }
@@ -714,6 +715,7 @@ import { useListStoreWithOut } from '../store/modules/list'
     }
     return id
   })
+
   const addUrl = () => {
     const urlList = newUrl.value.split('\n')
     let successLength = 0
@@ -988,16 +990,22 @@ import { useListStoreWithOut } from '../store/modules/list'
     if (!isBuff) {
       urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
     } else {
-      urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k))
+      urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k - 1))
     }
 
     console.log('[urls]', urls)
 
     const params: any = [urls, { out: filename }]
     if (aria2Data.value.restrictConnections) {
-      // 貌似同时指定不会生效，这里单独指定`max-connection-per-server`
-      // params[1]['split'] = urls.length
-      params[1]['max-connection-per-server'] = '1'
+      // `split`: 一个链接只会有一个线程，不会有多余的线程，比下面的参数安全一些。
+      params[1]['split'] = urls.length.toString()
+
+      // `max-connection-per-server`: 一个链接有多个线程，
+      //    但是只会使用前N个线程(N=推送的链接数量)，剩下的是`waiting`状态，不清楚这些有没有发送请求，如果有，那429风险大一些。
+      // params[1]['max-connection-per-server'] = urls.length.toString()
+
+      // 看来叠加下载这个方式不太可行，做了上面的限制，还是很容易就429！
+      // 或者只能少量叠加，比如2~3个链接，但意义就不大了...
     }
 
     let postData:any = {

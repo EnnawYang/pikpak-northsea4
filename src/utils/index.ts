@@ -88,6 +88,14 @@ export const refineDownloadUrl = (config: any, url: string) => {
   return url
 }
 
+export const refineImageUrl = (config: any, url: string) => {
+  if (!config.applyToImage) {
+    return url
+  }
+
+  return refineDownloadUrl(config, url)
+}
+
 export const refinePlayUrl = (config: any, url: string) => {
   if (config.serverNumber) {
     url = url.replace(/\d+(\.mypikpak\.com)/, config.serverNumber + '$1')
