@@ -8,19 +8,34 @@
           </n-breadcrumb-item>
           <n-breadcrumb-item v-for="(pathItem, k) in listStore.paths" :key="k">
             <router-link :to="`/redirect/list/${pathItem.id}`">
-              {{pathItem.name}}
+              <n-tooltip placement="bottom-start" trigger="hover">
+                <template #trigger>
+                  {{pathItem.name}}
+                </template>
+                <span>{{pathItem.name}}</span>
+              </n-tooltip>
             </router-link>
           </n-breadcrumb-item>
         </n-breadcrumb>
       </div>
       <div class="action">
         <n-space>
-          <n-button type="default" @click="movePost" v-if="moveFiles?.length">
-            粘贴已剪切{{moveFiles.length}}项资源
-          </n-button>
-          <n-button v-if="copyFiles?.length" @click="copyPost">
-            粘贴已复制{{copyFiles.length}}项资源
-          </n-button>         
+          <n-popover v-if="moveFiles?.length" trigger="hover">
+            <template #trigger>
+              <n-button type="default" @click="movePost">
+                粘贴已剪切{{moveFiles.length}}项资源
+              </n-button>
+            </template>
+            <n-button type="warning" @click="movePost('cancel')">取消剪切</n-button>
+          </n-popover>
+          <n-popover v-if="copyFiles?.length" trigger="hover">
+            <template #trigger>
+              <n-button @click="copyPost">
+                粘贴已复制{{copyFiles.length}}项资源
+              </n-button>   
+            </template>
+            <n-button type="warning" @click="copyPost('cancel')">取消复制</n-button>
+          </n-popover>     
           <n-button type="primary" @click="showAddUrl = true">
             <template #icon>
               <n-icon><circle-plus/></n-icon>
@@ -28,9 +43,6 @@
             磁力/秒链/目录
           </n-button>
           <n-button @click="showUserMenu = true">
-            <template #icon>
-              <n-icon :color="themeVars.primaryColor"><circle-plus/></n-icon>
-            </template>
             自定义菜单
           </n-button>
         </n-space>
@@ -254,7 +266,7 @@ import {
   DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, 
   NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, 
   NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, 
-  NFormItem, NTag, NText, NInputGroup 
+  NFormItem, NTag, NText, NInputGroup, NPopover,
 } from 'naive-ui'
 import { 
   CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, 
@@ -262,7 +274,7 @@ import {
 } from '@vicons/tabler'
 import { 
   byteConvert, delay, getMagnetLinksFromText, getPikpakLinksFromText, isPikpakLink,
-  refineAria2DownloadUrl, refineDownloadUrl,
+  refineAria2DownloadUrl, refineDownloadUrl, refinePlayUrl, refineImageUrl,
 } from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
@@ -316,8 +328,13 @@ import { useListStoreWithOut } from '../store/modules/list'
                   fileInfo.value = res.data
                   if(fileInfo.value.web_content_link) {
                     if(row.mime_type.indexOf('video') != -1 || row.mime_type.indexOf('audio') != -1) {
+                      fileInfo.value.web_content_link = refinePlayUrl(playConfig.value, fileInfo.value.web_content_link)
+                      fileInfo.value.medias.forEach((item: any) => {
+                        item.link.url = refinePlayUrl(playConfig.value, item.link.url)
+                      })
                       showVideo.value = true
                     } else {
+                      fileInfo.value.web_content_link = refineImageUrl(playConfig.value, fileInfo.value.web_content_link)
                       showImage.value = true
                     }
                   }
@@ -430,6 +447,10 @@ import { useListStoreWithOut } from '../store/modules/list'
                     .then((res:any) => {
                       fileInfo.value = res.data
                       showCopy.value = true
+                      fileInfo.value.web_content_link = refineDownloadUrl(downloadConfig.value, fileInfo.value.web_content_link)
+                      fileInfo.value.medias.forEach((item: any) => {
+                        item.link.url = refineDownloadUrl(downloadConfig.value, item.link.url)
+                      })
                     })
                   break
                 case 'aria2Post':
@@ -552,27 +573,27 @@ import { useListStoreWithOut } from '../store/modules/list'
     
     checkedRowKeys.value = []
 
-    if (route.path.indexOf('/list') !== 0) {
-      return
-    }
-
-    const paramId = route.params.id
-    let dirId = ''
-    if (typeof paramId === 'string') {
-      dirId = paramId
-    }
-    
-    if (!dirId || dirId === '*') {
-      listStore.clear()
-    } else {
-      if (filesList.value && filesList.value.length) {
-        const dir: FileInfo = filesList.value.find((f: FileInfo) => f.id === dirId)
-        if (dir) {
-          listStore.push(dir)
-        }
-      } else {
-        listStore.pushId(dirId, true)
+    if (route.path.indexOf('/list') === 0) {
+      const paramId = route.params.id
+      let dirId = ''
+      if (typeof paramId === 'string') {
+        dirId = paramId
       }
+      
+      if (!dirId || dirId === '*') {
+        listStore.clear()
+      } else {
+        if (filesList.value && filesList.value.length) {
+          const dir: FileInfo = filesList.value.find((f: FileInfo) => f.id === dirId)
+          if (dir) {
+            listStore.push(dir)
+          }
+        } else {
+          listStore.pushId(dirId, true)
+        }
+      }
+    } else if (route.path.indexOf('/redirect/list') !== 0) {
+      listStore.clear()
     }
 
     filesList.value = []
@@ -580,14 +601,6 @@ import { useListStoreWithOut } from '../store/modules/list'
     pageToken.value = ''
     getFileList()
     parentInfo.value = {}
-    // listStore.clear()
-    // if(route.params.id && route.params.id !== '*') {
-    //   getFile(String(route.params.id))
-    //     .then(res => {
-    //       parentInfo.value = res.data
-    //       listStore.push(res.data)
-    //     })
-    // }
   }
 
   watch(route, () => {
@@ -596,6 +609,7 @@ import { useListStoreWithOut } from '../store/modules/list'
 
   const aria2Data = ref()
   const downloadConfig = ref()
+  const playConfig = ref()
   const parentInfo = ref()
   const samllPage = ref(true)
 
@@ -616,6 +630,9 @@ import { useListStoreWithOut } from '../store/modules/list'
 
     let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
     downloadConfig.value = dc
+
+    let _pc = JSON.parse(window.localStorage.getItem('pikpakPlay') || '{}')
+    playConfig.value = _pc
 
     initPage()
     window.onbeforeunload = function (e) {
@@ -698,6 +715,7 @@ import { useListStoreWithOut } from '../store/modules/list'
     }
     return id
   })
+
   const addUrl = () => {
     const urlList = newUrl.value.split('\n')
     let successLength = 0
@@ -970,25 +988,31 @@ import { useListStoreWithOut } from '../store/modules/list'
     }
 
     if (!isBuff) {
-      if (aria2Data.value.serverNumber) {
-        urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
-      }
+      urls = urls.map(url => refineAria2DownloadUrl(aria2Data.value, url, -999))
     } else {
-      urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k))
+      urls = urls.map((url, k) => refineAria2DownloadUrl(aria2Data.value, url, k - 1))
     }
 
     console.log('[urls]', urls)
+
+    const params: any = [urls, { out: filename }]
+    if (aria2Data.value.restrictConnections) {
+      // `split`: 一个链接只会有一个线程，不会有多余的线程，比下面的参数安全一些。
+      params[1]['split'] = urls.length.toString()
+
+      // `max-connection-per-server`: 一个链接有多个线程，
+      //    但是只会使用前N个线程(N=推送的链接数量)，剩下的是`waiting`状态，不清楚这些有没有发送请求，如果有，那429风险大一些。
+      // params[1]['max-connection-per-server'] = urls.length.toString()
+
+      // 看来叠加下载这个方式不太可行，做了上面的限制，还是很容易就429！
+      // 或者只能少量叠加，比如2~3个链接，但意义就不大了...
+    }
 
     let postData:any = {
         id:'',
         jsonrpc:'2.0',
         method:'aria2.addUri',
-        params:[
-            urls,
-            {
-              out: filename
-            }
-        ]
+        params,
     }
     if(dir && aria2Dir.value) {
       postData.params[1].dir = aria2Dir.value + '/' + dir
@@ -1053,7 +1077,13 @@ import { useListStoreWithOut } from '../store/modules/list'
     window.localStorage.setItem('pikpakCopyFiles', JSON.stringify(items))
     window.$message.success('复制成功，请点击页面右上方粘贴按钮')
   }
-  const movePost = () => {
+  const movePost = (e: any) => {
+    if (e === 'cancel') {
+      window.localStorage.removeItem('pikpakMoveFiles')
+      window.$message.success('已取消')
+      moveFiles.value = []
+      return
+    }
     http.post('https://api-drive.mypikpak.com/drive/v1/files:batchMove',{
       "to":{
         "parent_id": route.params.id || ''
@@ -1068,7 +1098,13 @@ import { useListStoreWithOut } from '../store/modules/list'
         window.localStorage.removeItem('pikpakMoveFiles')
       })
   }
-  const copyPost = () => {
+  const copyPost = (e: any) => {
+    if (e === 'cancel') {
+      window.localStorage.removeItem('pikpakCopyFiles')
+      window.$message.success('已取消')
+      copyFiles.value = []
+      return
+    }
     http.post('https://api-drive.mypikpak.com/drive/v1/files:batchCopy',{
       "to":{
         "parent_id": route.params.id || ''
@@ -1444,5 +1480,28 @@ import { useListStoreWithOut } from '../store/modules/list'
     bottom: 52px;
   }
 }
+</style>
 
+<style lang="scss">
+.list-page {
+  .n-breadcrumb ul {
+    display: flex;
+    max-width: 90%;
+    .n-breadcrumb-item {
+      display: inline-flex;
+      min-width: 0;
+      .n-breadcrumb-item__link {
+        max-width: 240px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      &:nth-child(1),
+      &:nth-last-child(1) {
+        //background: rgb(67, 211, 27);
+        flex-shrink: 0;
+      }
+    }
+  }
+}
 </style>

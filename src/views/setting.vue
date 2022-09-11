@@ -21,6 +21,12 @@
           <n-form-item label="Aria2 Token：">
             <n-input v-model:value="aria2Data.token" type="password" show-password-on="mousedown" clearable></n-input>
           </n-form-item>
+          <n-form-item label="限制连接数：" feedback="【实测并没有降低429的概率😅】一个下载链接只使用一个网络连接(线程)，使用反代时，建议开启，避免429。如不开启，请查看Aria2默认的`单任务连接数`和`单服务器最大连接数`">
+            <n-switch v-model:value="aria2Data.restrictConnections">
+              <template #checked>开启 - 避免请求频繁</template>
+              <template #unchecked>不开启 - Aria2默认控制</template>
+            </n-switch>
+          </n-form-item>
           <!-- TODO nativeui v2.24.0 才有feedback这个slot -->
           <n-form-item label="反代域名：" feedback="对全部Aria2下载生效。可以参考教程：https://www.tjsky.net/?p=433">
             <n-input v-model:value="aria2Data.reverseHost" placeholder="例如http://pcdn.xx.com" clearable></n-input>
@@ -45,11 +51,9 @@
               <n-radio-button value="series" label="序列循坏">序列循坏</n-radio-button>
             </n-radio-group>
           </n-form-item>
-          <!--
-          <n-form-item label="获取链接并发：">
+          <n-form-item label="获取链接并发：" feedback="提取多个下载链接时的并发数。建议不要太大，以免触发风控(实际作者也不清楚具体的限制)">
             <n-input-number v-model:value="aria2Data.batchUrlConcurrence" placeholder="提取多个下载链接时的并发数"></n-input-number>
           </n-form-item>
-          -->
           <n-form-item label="文件夹设置：">
             <n-switch v-model:value="aria2Data.dir" >
               <template #checked>选择文件夹时保存文件夹结构</template>
@@ -69,9 +73,9 @@
       </n-collapse-item>
       <!-- end Aria2设置 -->
 
-      <!-- start 下载设置 -->
-      <n-collapse-item name="download" title="下载设置">
-        <template #header>下载设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><download></download></n-icon></template>
+      <!-- start 网页下载设置 -->
+      <n-collapse-item name="download" title="网页下载设置">
+        <template #header>网页下载设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><download></download></n-icon></template>
         <n-form label-width="120px" label-align="left" label-placement="left">
           <n-form-item label="服务器序号：" feedback="替换下载链接域名中的服务器序号。序号请参考上面「Aria2设置」里的「服务器序号列表」">
             <n-auto-complete
@@ -89,8 +93,34 @@
           </n-form-item>
         </n-form>
       </n-collapse-item>
-      <!-- end 下载设置 -->
+      <!-- end 网页下载设置 -->
 
+      <!-- start 播放设置 -->
+      <n-collapse-item name="play" title="播放设置">
+        <template #header>播放设置   <n-icon style="vertical-align: middle;" size="20" color="#d03050"><Video></Video></n-icon></template>
+        <n-form label-width="120px" label-align="left" label-placement="left">
+          <n-form-item label="服务器序号：" feedback="替换播放链接域名中的服务器序号。序号请参考上面「Aria2设置」里的「服务器序号列表」">
+            <n-auto-complete
+              v-model:value="playConfig.serverNumber"
+              :options="serverNumbers"
+              placeholder="服务器序号"
+              clearable
+            ></n-auto-complete>
+          </n-form-item>
+          <n-form-item label="反代域名：" feedback="自动在播放链接前加上该反代域名。可以参考教程：https://www.tjsky.net/?p=433">
+            <n-input v-model:value="playConfig.reverseHost" placeholder="反代域名" clearable></n-input>
+          </n-form-item>
+          <n-form-item label="应用到图片查看：" feedback="查看图片时也使用指定序号和反代域名">
+            <n-switch v-model:value="playConfig.applyToImage"></n-switch>
+          </n-form-item>
+          <n-form-item>
+            <n-button type="primary" @click="savePlayConfig">保存</n-button>
+          </n-form-item>
+        </n-form>
+      </n-collapse-item>
+      <!-- end 播放设置 -->
+
+      <!-- start 自动登录设置 -->
       <n-collapse-item name="1" title="自动登录设置">
         <template #header>自动登录设置   <a @click.stop="" href="https://www.tjsky.net/?p=220#i-6" target="_blank"> <n-icon style="vertical-align: middle;" size="20" color="#d03050"><zoom-question></zoom-question></n-icon> </a></template>
         <n-form label-width="100px" label-align="left" label-placement="left">
@@ -110,14 +140,18 @@
           </n-form-item>
         </n-form>
       </n-collapse-item>
+      <!-- end 自动登录设置 -->
 
-      <n-collapse-item name="3" title="代理设置">
+      <!-- start 代理设置 -->
+      <n-collapse-item name="3">
+        <template #header>代理设置 <n-icon style="vertical-align: middle;" size="20" color="#d03050"><wifi></wifi></n-icon></template>
         <n-input type="textarea" v-model:value="proxyData" rows="4" placeholder="支持多个随机，一行一个，为空则不代理"></n-input>
         <p></p>
         <n-button type="primary" @click="proxyPost">保存设置</n-button>
         &nbsp;&nbsp;
         <n-text @click="proxyReset">恢复默认</n-text>
       </n-collapse-item>
+      <!-- end 代理设置 -->
 
       <n-collapse-item title="关于" name="2">
         <n-space>
@@ -147,7 +181,7 @@ import {
   NAlert, NLog, NIcon, NAutoComplete, NRadioGroup, NRadioButton,
   NDynamicTags,
 } from 'naive-ui'
-import { ZoomQuestion, Download } from '@vicons/tabler'
+import { ZoomQuestion, Download, Video, Wifi, } from '@vicons/tabler'
 import {
   proxy as proxyDefault,
   serverNumbers
@@ -177,10 +211,25 @@ const saveDownloadConfig = () => {
   window.$message.success('保存成功')
 }
 
+
+const playConfig = ref({
+  // 自定义服务器序号
+  serverNumber: '',
+  // 反代域名
+  reverseHost: '',
+  applyToImage: false,
+})
+
+const savePlayConfig = () => {
+  window.localStorage.setItem('pikpakPlay', JSON.stringify(playConfig.value))
+  window.$message.success('保存成功')
+}
+
 const aria2Data = ref({
   host: 'http://localhost:6800/jsonrpc',
   token: '',
   dir: true,
+  restrictConnections: true,
   // 自定义服务器序号
   serverNumber: '',
   // 使用多少个链接下载同一个文件
@@ -276,6 +325,9 @@ onMounted(() => {
 
   let dc = JSON.parse(window.localStorage.getItem('pikpakDownload') || '{}')
   downloadConfig.value = dc
+
+  let _pc = JSON.parse(window.localStorage.getItem('pikpakPlay') || '{}')
+  playConfig.value = _pc
 
   let login = JSON.parse(window.localStorage.getItem('pikpakLoginData') || '{}')
   if(login.username && login.password) {
