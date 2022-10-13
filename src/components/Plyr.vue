@@ -1,20 +1,8 @@
 <template>
   <video ref="playerRef" v-if="isVideo"></video>
   <audio ref="playerRef" v-if="isAudio"></audio>
-  <!--<video ref="playerRef" :data-poster="videoInfo.thumbnail_link" v-if="videoInfo.mime_type.indexOf('video') !== -1">
-    <template v-for="(item, key) in videoInfo.medias" :key="key">
-      <source 
-        :src="item?.link.url"
-        :type="videoInfo.mime_type === 'video/x-matroska' ? 'video/webm' :videoInfo.mime_type"
-        :size="list[item.resolution_name]"
-      />
-    </template>
-  </video>
-  <audio ref="playerRef" v-else-if="videoInfo.mime_type.indexOf('audio') !== -1">
-    <source :src="videoInfo.web_content_link"  />
-  </audio>
-  -->
 </template>
+
 <script setup lang="ts">
 import { computed, ref } from '@vue/reactivity';
 import { onMounted } from '@vue/runtime-core';
@@ -63,13 +51,16 @@ import 'plyr/dist/plyr.css'
       sources: []
     }
 
-    if (isVideo) {
+    if (isVideo.value) {
       source.type = 'video'
       let originalSize = 0
       let original = ''
       const sizeCounter: any = {}
 
       videoInfo.value.medias.forEach((v: any) => {
+        if (!v.video) {
+          return
+        }
         let size: number = list[v.resolution_name] || v.video.height
         if (v.media_name === 'Original') {
           originalSize = size
@@ -97,14 +88,17 @@ import 'plyr/dist/plyr.css'
         if (v.media_name === 'Original') {
           size = originalSize
         }
-        source.sources.push({
+        const _source: any = {
           src: v?.link.url,
           type: videoInfo.value.mime_type === 'video/x-matroska' ? 'video/webm' : videoInfo.value.mime_type,
-          size: size,
-        })
-        quality.options.push(size)
+        }
+        if (size) {
+          _source.size = size
+          quality.options.push(size)
+        }
+        source.sources.push(_source)
       })
-    } else if (isAudio) {
+    } else if (isAudio.value) {
       source.type = 'audio'
       source.sources.push({
         src: videoInfo.value.web_content_link,
