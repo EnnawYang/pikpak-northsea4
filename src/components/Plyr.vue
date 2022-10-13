@@ -135,7 +135,8 @@ import 'plyr/dist/plyr.css'
       // }
     })
 
-    player.value.poster = videoInfo.value.thumbnail_link
+    source.poster = videoInfo.value.thumbnail_link
+
     player.value.source = source
 
     console.log('[source]', source)
