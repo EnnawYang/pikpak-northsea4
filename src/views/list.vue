@@ -20,22 +20,28 @@
       </div>
       <div class="action">
         <n-space>
-          <n-popover v-if="moveFiles?.length" trigger="hover">
-            <template #trigger>
-              <n-button type="default" @click="movePost">
-                粘贴已剪切{{moveFiles.length}}项资源
-              </n-button>
-            </template>
-            <n-button type="warning" @click="movePost('cancel')">取消剪切</n-button>
-          </n-popover>
-          <n-popover v-if="copyFiles?.length" trigger="hover">
-            <template #trigger>
-              <n-button @click="copyPost">
-                粘贴已复制{{copyFiles.length}}项资源
-              </n-button>   
-            </template>
-            <n-button type="warning" @click="copyPost('cancel')">取消复制</n-button>
-          </n-popover>     
+          <n-button-group v-if="moveFiles?.length">
+            <n-button type="default" @click="movePost">
+              粘贴已剪切{{moveFiles.length}}项资源
+            </n-button>
+            <n-button type="warning" @click="movePost('cancel')">
+              <template #icon>
+                <n-icon><circle-x/></n-icon>
+              </template>
+            </n-button>
+          </n-button-group>
+
+          <n-button-group v-if="copyFiles?.length">
+            <n-button @click="copyPost">
+              粘贴已复制{{copyFiles.length}}项资源
+            </n-button>   
+            <n-button type="warning" @click="copyPost('cancel')">
+              <template #icon>
+                <n-icon><circle-x/></n-icon>
+              </template>
+            </n-button>
+          </n-button-group>
+  
           <n-button type="primary" @click="showAddUrl = true">
             <template #icon>
               <n-icon><circle-plus/></n-icon>
@@ -131,27 +137,26 @@
       </n-card>
     </n-modal>
     <n-modal v-model:show="showVideo">
-      <n-card style="width: 100vw; height: 100vh;" :title="fileInfo ? fileInfo.name : '视频'">
+      <n-card style="width: 80vw; height: 90vh;" :title="fileInfo ? fileInfo.name : '视频'">
         <template #header-extra>
-          <n-icon @click="showVideo = false">
+          <n-icon @click="showVideo = false" :size="30">
             <circle-x></circle-x>
           </n-icon>
         </template>
         <div style="width: 100%; height: 100%">
-          <!-- <Video :src="fileInfo.web_content_link" :type="fileInfo.mime_type"></Video> -->
           <plyr-vue :video="fileInfo"></plyr-vue>
         </div>
       </n-card>
     </n-modal>
     
     <n-modal v-model:show="showImage">
-      <n-card style="width: 100vw; height: 100vh;" :title="fileInfo ? fileInfo.name : '图片'">
+      <n-card style="width: 85vw; height: 95vh;" :title="fileInfo ? fileInfo.name : '图片'">
         <template #header-extra>
-          <n-icon @click="showImage = false">
+          <n-icon @click="showImage = false" :size="30">
             <circle-x></circle-x>
           </n-icon>
         </template>
-        <div style="width: 100%; height: calc(100vh - 80px);text-align: center;">
+        <div style="width: 100%; height: calc(95vh - 80px);text-align: center;">
           <img :src="fileInfo?.web_content_link" style="max-width: 100%; max-height: 100%">
         </div>
       </n-card>
@@ -266,7 +271,7 @@ import {
   DataTableColumns, NDataTable, NTime, NEllipsis, NModal, NCard, NInput, NBreadcrumb, 
   NBreadcrumbItem, NIcon, useThemeVars, NButton, NTooltip, NSpace, NScrollbar, NSpin, 
   NDropdown, useDialog, NAlert, useNotification, NotificationReactive, NSelect, NForm, 
-  NFormItem, NTag, NText, NInputGroup, NPopover,
+  NFormItem, NTag, NText, NInputGroup, NPopover, NButtonGroup,
 } from 'naive-ui'
 import { 
   CirclePlus, CircleX, Dots, Share, Copy as IconCopy, SwitchHorizontal, LetterA, 
@@ -1486,6 +1491,12 @@ import { useListStoreWithOut } from '../store/modules/list'
         flex-shrink: 0;
       }
     }
+  }
+}
+
+.n-card-header__extra {
+  .n-icon {
+    cursor: pointer;
   }
 }
 </style>

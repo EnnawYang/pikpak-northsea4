@@ -6,7 +6,6 @@ export const proxy = [
   'https://pikpak.hdddd.me',
   'https://pan.yooyi.tk',
   'https://pikpak.nsso.eu.org',
-  'https://pikpak-web.wnbh.cf',
   'https://pk.pikpakz.top',
 ]
 
@@ -23,4 +22,4 @@ export const serverNumbers = [
   '0470',
 ]
 
-export const version = '1.5.17'
+export const version = '1.5.18'
