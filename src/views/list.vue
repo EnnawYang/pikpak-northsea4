@@ -280,6 +280,7 @@ import {
 import { 
   byteConvert, delay, getMagnetLinksFromText, getPikpakLinksFromText, isPikpakLink,
   refineAria2DownloadUrl, refineDownloadUrl, refinePlayUrl, refineImageUrl,
+  pickBestUrl,
 } from '../utils'
 import PlyrVue from '../components/Plyr.vue'
 import TaskVue from '../components/Task.vue'
@@ -288,6 +289,7 @@ import streamSaver from 'streamsaver'
 import { DropdownMixedOption } from 'naive-ui/lib/dropdown/src/interface'
 import axios, { AxiosInstance } from 'axios'
 import { useListStoreWithOut } from '../store/modules/list'
+import { serverNumbers } from '../config'
 
   const filesList = ref()
   const route = useRoute()
@@ -617,6 +619,7 @@ import { useListStoreWithOut } from '../store/modules/list'
     if(aria2.dir === undefined) {
       aria2.dir = true
     }
+    aria2.serverNumbers = serverNumbers
     // `叠加策略`硬编：
     aria2.batchStrategy = 'series'
     if(aria2.host) {
@@ -906,7 +909,7 @@ import { useListStoreWithOut } from '../store/modules/list'
       .then((info:any) => {
         streamSaver.mitm = 'mitm.html'
         const fileStream = streamSaver.createWriteStream(info.data.name)
-        const url = refineDownloadUrl(downloadConfig.value, info.data.web_content_link)
+        const url = refineDownloadUrl(downloadConfig.value, pickBestUrl(info.data))
         fetch(url).then((res:any) => {
           if(!window.$downId) {
             window.$downId = []
@@ -968,10 +971,10 @@ import { useListStoreWithOut } from '../store/modules/list'
     if (Array.isArray(res)) {
       filename = res[0].data.name
       for (const item of res) {
-        urls.push(item.data.web_content_link)
+        urls.push(pickBestUrl(item.data))
       }
     } else {
-      urls.push(res.data.web_content_link)
+      urls.push(pickBestUrl(res.data))
       filename = res.data.name
     }
 
