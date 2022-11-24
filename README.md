@@ -7,13 +7,10 @@
 ## Demo
  * [PikPak](https://northsea4.github.io/pikpak/)
 
+## 交流
+TG: [PikPak 分享群](https://t.me/PikPakGroup)
+
 ## 安装部署
-
-### 安装教程
-  * [去年夏天版教程](https://www.tjsky.net/?p=201)
-### Github Aciton
-
-### Github Page
 
 ### Cloudflare Workers
   * [CF Workers实现反代](cf-worker)
