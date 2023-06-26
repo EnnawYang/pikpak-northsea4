@@ -120,3 +120,11 @@ export const refineAria2DownloadUrl = (config: any, url: string, lastChoosenServ
 
   return url
 }
+
+export const pickBestUrl = (fileItem: any) => {
+  const { medias = [], web_content_link } = fileItem
+  if (!medias.length || medias[0].media_name !== 'Original' || !medias[0].link) {
+    return web_content_link
+  }
+  return medias[0].link.url
+}

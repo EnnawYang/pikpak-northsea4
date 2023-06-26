@@ -1,12 +1,5 @@
 export const proxy = [
-  'https://diii.tk',
-  'https://api-pikpak.tjsky.cf',
-  'https://api-pikpak.tjsky-1.cf',
-  'https://pikpak.he13797739994.ga',
-  'https://pikpak.hdddd.me',
-  'https://pan.yooyi.tk',
-  'https://pikpak.nsso.eu.org',
-  'https://pk.pikpakz.top',
+  'https://api.pikpakshare.workers.dev',
 ]
 
 export const serverNumbers = [
@@ -22,4 +15,4 @@ export const serverNumbers = [
   '0470',
 ]
 
-export const version = '1.5.18'
+export const version = '1.5.20'
